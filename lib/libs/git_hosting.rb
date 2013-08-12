@@ -1028,9 +1028,9 @@ module GitHosting
 
         proj.member_principals.map(&:user).compact.uniq.each do |user|
           if user.allowed_to?(:commit_access, proj)
-            proj_write_user_keys += user.gitolite_public_keys.active.user_key.map(&:identifier)
+            proj_write_user_keys += user.gitolite_public_keys.active.user_key.map(&:get_gitusername)
           elsif user.allowed_to?(:view_changesets, proj)
-            proj_read_user_keys += user.gitolite_public_keys.active.user_key.map(&:identifier)
+            proj_read_user_keys += user.gitolite_public_keys.active.user_key.map(&:get_gitusername)
           end
         end
 
@@ -1125,9 +1125,9 @@ module GitHosting
 
               repo.deployment_credentials.active.select(&:honored?).each do |cred|
                 if cred.allowed_to?(:commit_access)
-                  write_user_keys << cred.gitolite_public_key.identifier
+                  write_user_keys << cred.gitolite_public_key.get_gitusername
                 elsif cred.allowed_to?(:view_changesets)
-                  read_user_keys << cred.gitolite_public_key.identifier
+                  read_user_keys << cred.gitolite_public_key.get_gitusername
                 end
               end
 

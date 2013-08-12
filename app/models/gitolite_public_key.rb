@@ -54,16 +54,31 @@ class GitolitePublicKey < ActiveRecord::Base
         time_tag = "#{my_time.to_i.to_s}_#{my_time.usec.to_s}"
         case key_type
           when KEY_TYPE_USER
-            # add "redmine_" as a prefix to the username, and then the current date
-            # this helps ensure uniqueness of each key identifier
+            # add current date to the username, this helps ensure uniqueness of each
+            # key identifier
             #
-            # also, it ensures that it is very, very unlikely to conflict with any
-            # existing key name if gitolite config is also being edited manually
-            "redmine_#{self.user.login.underscore}_#{time_tag}".gsub(/[^0-9a-zA-Z\-]/,'_')
+            # seperate username and date with an @ character. this will cause gitolite
+            # to ignore everything after the @ when determining the username.
+            "#{self.user.login.underscore}".gsub(/[^0-9a-zA-Z\-]/,'_') << "@" << "#{time_tag}".gsub(/[^0-9a-zA-Z\-]/,'_')
           when KEY_TYPE_DEPLOY
             # add "redmine_deploy_key_" as a prefix, and then the current date
             # to help ensure uniqueness of each key identifier
             "redmine_#{DEPLOY_PSEUDO_USER}_#{time_tag}"
+          else
+            nil
+          end
+        end
+  end
+
+  def get_gitusername
+      begin
+        case key_type
+          when KEY_TYPE_USER
+	    # This is equivalent to the username of the redmine user
+            "#{self.user.login.underscore}".gsub(/[^0-9a-zA-Z\-]/,'_')
+          when KEY_TYPE_DEPLOY
+            # git usernames for deploy keys are equivalent to their identifierts
+            self.identifier
           else
             nil
           end
@@ -95,7 +110,7 @@ class GitolitePublicKey < ActiveRecord::Base
 
   def to_s ; title ; end
 
-  @@myregular = /^redmine_(.*)_\d*_\d*(.pub)?$/
+  @@myregular = /^(.*)@\d*_\d*(.pub)?$/
   def self.ident_to_user_token(identifier)
     result = @@myregular.match(identifier)
     (result != nil) ? result[1] : nil
